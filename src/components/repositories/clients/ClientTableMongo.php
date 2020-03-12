@@ -41,6 +41,7 @@ class ClientTableMongo extends ClientTableAbstract implements IClientTable
      */
     public function findOne(array $query = [], array $fields = [])
     {
+        $this->prepareQuery($query);
         $record = $this->collection->findOne($query, $fields);
 
         if ($record) {
@@ -64,6 +65,7 @@ class ClientTableMongo extends ClientTableAbstract implements IClientTable
         /**
          * @var $recordsCursor Cursor
          */
+        $this->prepareQuery($query);
         $recordsCursor = $this->collection->find($query, $fields);
         $rawRecords = $recordsCursor->toArray();
         $itemClass = $this->getItemClass();
@@ -80,19 +82,23 @@ class ClientTableMongo extends ClientTableAbstract implements IClientTable
     /**
      * @param IItem $item
      *
-     * @return \Exception|IItem|mixed
-     * @throws
+     * @return IItem
+     * @throws \Exception
      */
     public function insert($item)
     {
         $itemData = $item->__toArray();
         $itemClass = get_class($item);
 
-        $this->collection->insert($itemData);
-        $idAs = $this->getIdAs();
-        $itemData[$idAs ?: '_id'] = (string) $itemData['_id'];
+        $id = $this->collection->insert($itemData);
+        if ($id) {
+            $idAs = $this->getIdAs();
+            $itemData[$idAs ?: '_id'] = (string) $id;
 
-        return new $itemClass($itemData);
+            return new $itemClass($itemData);
+        }
+
+        throw new \Exception('Can not insert a record');
     }
 
     /**
@@ -204,5 +210,17 @@ class ClientTableMongo extends ClientTableAbstract implements IClientTable
         });
 
         return $this;
+    }
+
+    /**
+     * @param array $query
+     */
+    protected function prepareQuery(&$query)
+    {
+        foreach ($query as $fieldName => $fieldValue) {
+            if (is_array($fieldValue)) {
+                $query[$fieldName] = ['$in' => $fieldValue];
+            }
+        }
     }
 }
