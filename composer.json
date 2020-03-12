@@ -3,7 +3,6 @@
   "description": "Extas compatable Mongo repository package",
   "require": {
     "psr/container": "*",
-    "jeyroik/extas-foundation": "2.*",
     "league/monga": "1.*"
   },
   "autoload": {
