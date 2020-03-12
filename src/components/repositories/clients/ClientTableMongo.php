@@ -35,15 +35,27 @@ class ClientTableMongo extends ClientTableAbstract implements IClientTable
 
     /**
      * @param array|Where $query
+     * @param int $offset
      * @param array $fields
      *
      * @return array|IItem|null
      * @throws
      */
-    public function findOne(array $query = [], array $fields = [])
+    public function findOne(array $query = [], int $offset = 0, array $fields = [])
     {
         $this->prepareQuery($query);
-        $record = $this->collection->findOne($query, $fields);
+        $record = $this->collection->findOne(
+            function($q) use ($query, $offset) {
+                /**
+                 * @var $q Find
+                 */
+                $q->skip($offset);
+                foreach ($query as $fieldName => $fieldValue) {
+                    $q->where($fieldName, $fieldValue);
+                }
+            },
+            $fields
+        );
 
         if ($record) {
             $record['_id'] = (string) $record['_id'];
