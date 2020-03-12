@@ -2,7 +2,7 @@
   "name": "jeyroik/extas-repositories-mongo",
   "description": "Extas compatable Mongo repository package",
   "require": {
-    "psr/container": "*",
+    "alcaeus/mongo-php-adapter": "1.*",
     "jeyroik/extas-foundation": "2.*",
     "league/monga": "1.*"
   },
