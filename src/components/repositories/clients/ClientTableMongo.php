@@ -70,24 +70,26 @@ class ClientTableMongo extends ClientTableAbstract implements IClientTable
      * @param array|Where $query
      * @param int $limit
      * @param int $offset
+     * @param array $orderBy
      * @param array $fields
      *
      * @return array|IItem[]
      * @throws
      */
-    public function findAll(array $query = [], int $limit = 0, int $offset = 0, array $fields = [])
+    public function findAll(array $query = [], int $limit = 0, int $offset = 0, array $orderBy = [], array $fields = [])
     {
         /**
          * @var $recordsCursor Cursor
          */
         $this->prepareQuery($query);
         $recordsCursor = $this->collection->find(
-            function ($q) use ($query, $limit, $offset) {
+            function ($q) use ($query, $limit, $offset, $orderBy) {
                 /**
                  * @var $q Find
                  */
                 $limit && $q->limit($limit);
                 $q->skip($offset);
+                $q->orderBy(...$orderBy);
                 foreach ($query as $fieldName => $fieldValue) {
                     $q->where($fieldName, $fieldValue);
                 }
