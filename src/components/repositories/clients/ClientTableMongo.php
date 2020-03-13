@@ -178,6 +178,7 @@ class ClientTableMongo extends ClientTableAbstract implements IClientTable
      */
     public function deleteMany($query)
     {
+        $this->prepareQuery($query);
         $result = $this->collection->remove($query);
 
         if (is_bool($result)) {
