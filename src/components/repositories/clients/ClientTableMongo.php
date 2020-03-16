@@ -89,7 +89,9 @@ class ClientTableMongo extends ClientTableAbstract implements IClientTable
                  */
                 $limit && $q->limit($limit);
                 $q->skip($offset);
-                $q->orderBy(...$orderBy);
+                if (!empty($orderBy)) {
+                    $q->orderBy(...$orderBy);
+                }
                 foreach ($query as $fieldName => $fieldValue) {
                     $q->where($fieldName, $fieldValue);
                 }
