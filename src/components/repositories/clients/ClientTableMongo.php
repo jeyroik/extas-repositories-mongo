@@ -119,18 +119,11 @@ class ClientTableMongo extends ClientTableAbstract implements IClientTable
     public function insert($item)
     {
         $itemData = $item->__toArray();
-        $itemClass = get_class($item);
-
         $id = $this->collection->insert($itemData);
+
         if ($id) {
-            if ($idAs = $this->getIdAs()) {
-                $itemData[$idAs ?: '_id'] = (string) $id;
-                $changedItem = new $itemClass($itemData);
-                $this->update($changedItem);
-                return $changedItem;
-            } else {
-                return $item;
-            }
+            $item['_id'] = $id;
+            return $item;
         }
 
         throw new \Exception('Can not insert a record');
