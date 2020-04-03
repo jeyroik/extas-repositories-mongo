@@ -103,7 +103,11 @@ class ClientTableMongo extends ClientTableAbstract implements IClientTable
         $records = [];
 
         foreach ($rawRecords as $record) {
-            $record['_id'] = (string) $record['_id'];
+            if ($this->getPk() != '_id') {
+                unset($record['_id']);
+            } else {
+                $record['_id'] = (string)$record['_id'];
+            }
             $records[] = new $itemClass($record);
         }
 
