@@ -160,7 +160,7 @@ class ClientTableMongo extends ClientTableAbstract implements IClientTable
             unset($item['_id']);
         }
 
-        $result = $this->collection->update([$this->getPk() => $pk], $item->__toArray());
+        $result = $this->collection->update($item->__toArray(), [$this->getPk() => $pk]);
 
         return is_bool($result)
             ? $result
