@@ -58,7 +58,11 @@ class ClientTableMongo extends ClientTableAbstract implements IClientTable
         );
 
         if ($record) {
-            $record['_id'] = (string) $record['_id'];
+            if ($this->getPk() != '_id') {
+                unset($record['_id']);
+            } else {
+                $record['_id'] = (string)$record['_id'];
+            }
             $itemClass = $this->getItemClass();
             return new $itemClass($record);
         }
@@ -126,7 +130,9 @@ class ClientTableMongo extends ClientTableAbstract implements IClientTable
         $id = $this->collection->insert($itemData);
 
         if ($id) {
-            $item['_id'] = $id;
+            if ($this->getPk() == '_id') {
+                $item['_id'] = $id;
+            }
             return $item;
         }
 
