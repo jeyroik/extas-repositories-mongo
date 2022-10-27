@@ -16,7 +16,7 @@ jobs:
     - uses: actions/checkout@v2
 
     - name: "Install PHP with extensions"
-      uses: "shivammathur/setup-php@v1"
+      uses: "shivammathur/setup-php@v2"
       with:
        php-version: "${{ matrix.php-version }}"
        coverage: "pcov"
@@ -34,7 +34,7 @@ jobs:
       uses: supercharge/mongodb-github-action@1.1.0
 
     - name: Install mongodb php-extension
-      run: sudo apt install php8.0-mongodb
+      run: sudo apt install php8.1-mongodb
 
     - name: Run test suites
       run: composer run-script test
