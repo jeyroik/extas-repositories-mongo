@@ -95,11 +95,11 @@ class DriverMongo extends Driver
             $options['projection'] = $fields;
         }
 
-        $recordsCursor = $this->collection->find($query, $fields);
-        $rawRecords = $recordsCursor->toArray();
+        $rawRecords = $this->collection->find($query, $fields);
         $records = [];
 
         foreach ($rawRecords as $record) {
+            $record = $this->unSerializeItem($record);
             if ($this->getPk() != '_id') {
                 unset($record['_id']);
             } else {
