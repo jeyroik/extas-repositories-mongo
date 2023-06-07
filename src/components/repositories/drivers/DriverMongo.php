@@ -3,8 +3,7 @@ namespace extas\components\repositories\drivers;
 
 use extas\components\THasConfig;
 use extas\interfaces\IItem;
-use League\Monga;
-use League\Monga\Collection;
+use MongoDB\Collection;
 
 class DriverMongo extends Driver
 {
@@ -31,9 +30,14 @@ class DriverMongo extends Driver
     {
         $this->baseConstruct($config);
 
-        $connection = Monga::connection($this->getDsn());
-        $db = $connection->database($this->getDbName());
-        $this->collection = $db->collection($this->getTableName());
+        try{
+            $driver = new \MongoDB\Client($this->getDsn());
+            $dbName = $this->getDbName();
+            $tableName = $this->getTableName();
+            $this->collection = $driver->$dbName->$tableName;
+        } catch (\Exception $e) {
+
+        }
     }
 
     /**
@@ -47,20 +51,17 @@ class DriverMongo extends Driver
     public function findOne(array $query = [], int $offset = 0, array $fields = [])
     {
         $this->prepareQuery($query);
-        $record = $this->collection->findOne(
-            function($q) use ($query, $offset) {
-                /**
-                 * @var $q Find
-                 */
-                $q->skip($offset);
-                foreach ($query as $fieldName => $fieldValue) {
-                    $q->where($fieldName, $fieldValue);
-                }
-            },
-            $fields
-        );
+
+        $options = ['skip' => $offset];
+
+        if (!empty($fields)) {
+            $options['projection'] = $fields;
+        }
+        
+        $record = $this->collection->findOne($query, $options);
 
         if ($record) {
+            $record = $record->getArrayCopy();
             if ($this->getPk() != '_id') {
                 unset($record['_id']);
             } else {
@@ -88,26 +89,17 @@ class DriverMongo extends Driver
          * @var $recordsCursor Cursor
          */
         $this->prepareQuery($query);
-        $recordsCursor = $this->collection->find(
-            function ($q) use ($query, $limit, $offset, $orderBy) {
-                /**
-                 * @var $q Find
-                 */
-                $limit && $q->limit($limit);
-                $q->skip($offset);
-                if (!empty($orderBy)) {
-                    $q->orderBy(...$orderBy);
-                }
-                foreach ($query as $fieldName => $fieldValue) {
-                    $q->where($fieldName, $fieldValue);
-                }
-            },
-            $fields
-        );
-        $rawRecords = $recordsCursor->toArray();
+        $options = ['skip' => $offset, 'limit' => $limit, 'sort' => $orderBy];
+
+        if (!empty($fields)) {
+            $options['projection'] = $fields;
+        }
+
+        $rawRecords = $this->collection->find($query, $fields);
         $records = [];
 
         foreach ($rawRecords as $record) {
+            $record = $this->unSerializeItem($record);
             if ($this->getPk() != '_id') {
                 unset($record['_id']);
             } else {
@@ -128,11 +120,11 @@ class DriverMongo extends Driver
     public function insert($item)
     {
         $itemData = $item->__toArray();
-        $id = $this->collection->insert($itemData);
+        $result = $this->collection->insertOne($itemData);
 
-        if ($id) {
+        if ($result->getInsertedCount()) {
             if ($this->getPk() == '_id') {
-                $item['_id'] = $id;
+                $item['_id'] = $result->getInsertedId();
             }
             return $item;
         }
@@ -153,13 +145,9 @@ class DriverMongo extends Driver
             $data = $data->__toArray();
         }
 
-        $result = $this->collection->update($data, $query);
+        $result = $this->collection->updateMany($query, $this->prepareForUpdate($data));
 
-        if (is_bool($result)) {
-            return (int) $result;
-        }
-
-        return isset($result['n']) ? (int) $result['n'] : 0;
+        return $result->getModifiedCount();
     }
 
     /**
@@ -175,13 +163,9 @@ class DriverMongo extends Driver
             unset($item['_id']);
         }
 
-        $result = $this->collection->update($item->__toArray(), [$this->getPk() => $pk]);
+        $result = $this->collection->updateOne([$this->getPk() => $pk], $this->prepareForUpdate($item->__toArray()));
 
-        return is_bool($result)
-            ? $result
-            : (isset($result['n']) && ($result['n'] >= 1)
-                ? true
-                : false);
+        return $result->getModifiedCount() ? true : false;
     }
 
     /**
@@ -197,13 +181,9 @@ class DriverMongo extends Driver
         }
 
         $this->prepareQuery($query);
-        $result = $this->collection->remove($query);
+        $result = $this->collection->deleteMany($query);
 
-        if (is_bool($result)) {
-            return (int) $result;
-        }
-
-        return isset($result['n']) ? (int) $result['n'] : 0;
+        return $result->getDeletedCount();
     }
 
     /**
@@ -218,13 +198,9 @@ class DriverMongo extends Driver
             $item[$this->getPk()] = new \MongoId($item[$this->getPk()]);
         }
 
-        $result = $this->collection->remove([$this->getPk() => $item[$this->getPk()]]);
+        $result = $this->collection->deleteOne([$this->getPk() => $item[$this->getPk()]]);
 
-        return is_bool($result)
-            ? $result
-            : (isset($result['n']) && ($result['n'] >= 1)
-                ? true
-                : false);
+        return $result->getDeletedCount() ? true : false;
     }
 
     /**
@@ -268,6 +244,38 @@ class DriverMongo extends Driver
     public function getDsn(): string
     {
         return $this->config[static::FIELD__DSN] ?? '';
+    }
+
+    /**
+     * @param $item
+     *
+     * @return array
+     */
+    protected function prepareForUpdate($item)
+    {
+        return ['$set' => $item];
+    }
+
+    /**
+     * @param $item
+     *
+     * @return array
+     */
+    protected function unSerializeItem($item)
+    {
+        $unSerialized = [];
+
+        $item = (array) $item;
+
+        foreach ($item as $field => $value) {
+            if (is_object($value)) {
+                $value = $this->unSerializeItem($value);
+            }
+
+            $unSerialized[$field] = $value;
+        }
+
+        return $unSerialized;
     }
 
     /**

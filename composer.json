@@ -3,7 +3,7 @@
   "description": "Extas compatable Mongo repository package",
   "require": {
     "alcaeus/mongo-php-adapter": "1.*",
-    "league/monga": "1.*",
+    "mongodb/mongodb": "1.*",
     "jeyroik/extas-foundation": "6.*"
   },
   "require-dev": {
