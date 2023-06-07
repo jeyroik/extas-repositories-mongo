@@ -61,7 +61,7 @@ class DriverMongo extends Driver
         $record = $this->collection->findOne($query, $options);
 
         if ($record) {
-            $record = $record->getArrayCopy();
+            $record = $record->toArray();
             if ($this->getPk() != '_id') {
                 unset($record['_id']);
             } else {
@@ -96,7 +96,7 @@ class DriverMongo extends Driver
         }
 
         $recordsCursor = $this->collection->find($query, $fields);
-        $rawRecords = $recordsCursor->getArrayCopy();
+        $rawRecords = $recordsCursor->toArray();
         $records = [];
 
         foreach ($rawRecords as $record) {
