@@ -30,14 +30,10 @@ class DriverMongo extends Driver
     {
         $this->baseConstruct($config);
 
-        try{
-            $driver = new \MongoDB\Client($this->getDsn());
-            $dbName = $this->getDbName();
-            $tableName = $this->getTableName();
-            $this->collection = $driver->$dbName->$tableName;
-        } catch (\Exception $e) {
-
-        }
+        $driver = new \MongoDB\Client($this->getDsn());
+        $dbName = $this->getDbName();
+        $tableName = $this->getTableName();
+        $this->collection = $driver->$dbName->$tableName;
     }
 
     /**
