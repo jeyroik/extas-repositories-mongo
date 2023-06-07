@@ -145,7 +145,7 @@ class DriverMongo extends Driver
             $data = $data->__toArray();
         }
 
-        $result = $this->collection->updateMany($query, $data);
+        $result = $this->collection->updateMany($query, $this->prepareForUpdate($data));
 
         return $result->getModifiedCount();
     }
@@ -163,7 +163,7 @@ class DriverMongo extends Driver
             unset($item['_id']);
         }
 
-        $result = $this->collection->updateOne([$this->getPk() => $pk], $item->__toArray());
+        $result = $this->collection->updateOne([$this->getPk() => $pk], $this->prepareForUpdate($item->__toArray()));
 
         return $result->getModifiedCount() ? true : false;
     }
@@ -244,6 +244,16 @@ class DriverMongo extends Driver
     public function getDsn(): string
     {
         return $this->config[static::FIELD__DSN] ?? '';
+    }
+
+    /**
+     * @param $item
+     *
+     * @return array
+     */
+    protected function prepareForUpdate($item)
+    {
+        return ['$set' => $item];
     }
 
     /**
