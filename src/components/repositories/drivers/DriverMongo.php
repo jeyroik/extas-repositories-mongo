@@ -61,12 +61,13 @@ class DriverMongo extends Driver
         $record = $this->collection->findOne($query, $options);
 
         if ($record) {
+            $record = $record->getArrayCopy();
             if ($this->getPk() != '_id') {
                 unset($record['_id']);
             } else {
                 $record['_id'] = (string)$record['_id'];
             }
-            return $this->unSerializeItem($record);
+            return $record;
         }
 
         return $record;
@@ -95,7 +96,7 @@ class DriverMongo extends Driver
         }
 
         $recordsCursor = $this->collection->find($query, $fields);
-        $rawRecords = $recordsCursor->toArray();
+        $rawRecords = $recordsCursor->getArrayCopy();
         $records = [];
 
         foreach ($rawRecords as $record) {
@@ -119,11 +120,11 @@ class DriverMongo extends Driver
     public function insert($item)
     {
         $itemData = $item->__toArray();
-        $id = $this->collection->insertOne($itemData);
+        $result = $this->collection->insertOne($itemData);
 
-        if ($id) {
+        if ($result->getInsertedCount()) {
             if ($this->getPk() == '_id') {
-                $item['_id'] = $id;
+                $item['_id'] = $result->getInsertedId();
             }
             return $item;
         }
@@ -146,11 +147,7 @@ class DriverMongo extends Driver
 
         $result = $this->collection->updateMany($query, $data);
 
-        if (is_bool($result)) {
-            return (int) $result;
-        }
-
-        return isset($result['n']) ? (int) $result['n'] : 0;
+        return $result->getModifiedCount();
     }
 
     /**
@@ -168,11 +165,7 @@ class DriverMongo extends Driver
 
         $result = $this->collection->updateOne([$this->getPk() => $pk], $item->__toArray());
 
-        return is_bool($result)
-            ? $result
-            : (isset($result['n']) && ($result['n'] >= 1)
-                ? true
-                : false);
+        return $result->getModifiedCount() ? true : false;
     }
 
     /**
@@ -190,11 +183,7 @@ class DriverMongo extends Driver
         $this->prepareQuery($query);
         $result = $this->collection->deleteMany($query);
 
-        if (is_bool($result)) {
-            return (int) $result;
-        }
-
-        return isset($result['n']) ? (int) $result['n'] : 0;
+        return $result->getDeletedCount();
     }
 
     /**
@@ -211,11 +200,7 @@ class DriverMongo extends Driver
 
         $result = $this->collection->deleteOne([$this->getPk() => $item[$this->getPk()]]);
 
-        return is_bool($result)
-            ? $result
-            : (isset($result['n']) && ($result['n'] >= 1)
-                ? true
-                : false);
+        return $result->getDeletedCount() ? true : false;
     }
 
     /**
