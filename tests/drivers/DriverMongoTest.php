@@ -106,13 +106,15 @@ class DriverMongoTest extends TestCase
         $this->assertNotEmpty($plugin, 'Can not find plugin with class = NotExisting');
 
         $plugin->setClass('Existing not today');
+        $all = $repo->all([Plugin::FIELD__CLASS => 'NotExisting']);
+        $count = count($all);
 
         $result = $repo->update($plugin, [Plugin::FIELD__CLASS => 'NotExisting']);
 
         $plugin = $repo->one([Plugin::FIELD__CLASS => 'Existing not today']);
         $this->assertNotEmpty($plugin, 'Can not find plugin with class = Existing not today');
 
-        $this->assertEquals($result, 1);
+        $this->assertEquals($result, $count);
     }
 
     public function testDeleteOne()
