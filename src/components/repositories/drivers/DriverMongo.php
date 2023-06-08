@@ -63,7 +63,7 @@ class DriverMongo extends Driver
             } else {
                 $record['_id'] = (string)$record['_id'];
             }
-            return $record;
+            return $this->unSerializeItem($record);
         }
 
         return $record;
