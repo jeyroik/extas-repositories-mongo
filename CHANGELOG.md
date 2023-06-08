@@ -1,3 +1,7 @@
+# 2.0.3
+
+- Unserialize item in the `findOne()` method.
+
 # 2.0.2
 
 - Moved from `league/monga` to `mongodb/mongo` package.
